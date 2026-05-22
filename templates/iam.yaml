@@ -210,7 +210,7 @@ Resources:
                   - ecr:PutImage
                   - ecr:DescribeImages
                 Resource:
-                  - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ProjectName}-app"
+                  - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ProjectName}-java-app"
               - Sid: S3ArtifactUpload
                 Effect: Allow
                 Action:

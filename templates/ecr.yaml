@@ -14,7 +14,7 @@ Resources:
   Repository:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: !Sub "${ProjectName}-app"
+      RepositoryName: !Sub "${ProjectName}-java-app"
       # Immutable tags: once pushed, a tag cannot be overwritten.
       # The mutable "{env}-latest" tag is intentionally omitted from
       # the immutability rule — it acts as a pointer so EventBridge

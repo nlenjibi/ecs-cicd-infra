@@ -11,7 +11,6 @@ flowchart TD
     DEV["👨‍💻 Developer\npushes code"]
 
     subgraph GH["GitHub (App Repository)"]
-        direction TB
         BRANCH["Branch: dev / test / main"]
         CI["ci.yml\nBuild + Test\n(mvn clean verify)"]
         DEPLOY["deploy.yml\nBuild JAR → Docker image\nOIDC → ECR push"]
@@ -25,7 +24,7 @@ flowchart TD
         end
 
         subgraph ECR["Amazon ECR"]
-            REPO["bem13-app\nTags: {env}-{sha} + {env}-latest\nLifecycle: keep 15, expire untagged 1d"]
+            REPO["bem13-java-app\nTags: {env}-{sha} + {env}-latest\nLifecycle: keep 15, expire untagged 1d"]
         end
 
         subgraph S3["Amazon S3 — Artifact Bucket"]
@@ -101,39 +100,52 @@ flowchart TD
     ALB -- "Port 80 (prod)" --> TASK_A
     ALB -- "Port 80 (prod)" --> TASK_B
     ALB -- "Port 9090 (test)" --> GREEN
-    TASK_A --> EP1 & EP2 & EP3 & EP4
-    TASK_B --> EP1 & EP2 & EP3 & EP4
-    EP1 & EP2 --> REPO
+    TASK_A --> EP1
+    TASK_A --> EP2
+    TASK_A --> EP3
+    TASK_A --> EP4
+    TASK_B --> EP1
+    TASK_B --> EP2
+    TASK_B --> EP3
+    TASK_B --> EP4
+    EP1 --> REPO
+    EP2 --> REPO
     EP4 --> CW
-    TASK_A & TASK_B --> CW
-    ASG --> TASK_A & TASK_B
+    TASK_A --> CW
+    TASK_B --> CW
+    ASG --> TASK_A
+    ASG --> TASK_B
 ```
 
 ---
 
 ## CloudFormation Stack Dependency Chain
 
+One GitSync link per environment deploys a single master nested stack,
+which creates all 9 child stacks in order via `DependsOn`.
+
 ```mermaid
 flowchart LR
-    N["1. network\nVPC · Subnets · IGW · NAT"]
-    S["2. security\nALB SG · ECS SG · Endpoint SG"]
-    E["3. ecr\nRepository + Lifecycle"]
-    I["4. iam\n6 Roles (OIDC · ECS · Pipeline · Deploy · EventBridge)"]
-    EP["5. endpoints\nECR API · ECR DKR · S3 · Logs"]
-    A["6. alb\nALB · Blue TG · Green TG · Listeners"]
-    C["7. ecs\nCluster · TaskDef · Service · AutoScaling"]
-    CD["8. codedeploy\nApp · DeploymentGroup"]
-    P["9. pipeline\nS3 Bucket · EventBridge · CodePipeline"]
+    GS["GitSync\n(1 link per env)"]
 
-    N --> S & EP & A
-    S --> EP & A & C
-    E --> C & P
-    I --> C & CD & P
-    EP --> C
-    A --> C & CD
-    C --> CD & P
-    CD --> P
+    subgraph MASTER["master nested stack"]
+        N["1. network\nVPC · Subnets · IGW · NAT"]
+        S["2. security\nALB SG · ECS SG · Endpoint SG"]
+        E["3. ecr\nRepository + Lifecycle"]
+        I["4. iam\n6 Roles (OIDC · ECS · Pipeline · Deploy · EventBridge)"]
+        EP["5. endpoints\nECR API · ECR DKR · S3 · Logs"]
+        A["6. alb\nALB · Blue TG · Green TG · Listeners"]
+        C["7. ecs\nCluster · TaskDef · Service · AutoScaling"]
+        CD["8. codedeploy\nApp · DeploymentGroup"]
+        P["9. pipeline\nS3 Bucket · EventBridge · CodePipeline"]
+    end
+
+    GS --> MASTER
+    N --> S --> E --> I --> EP --> A --> C --> CD --> P
 ```
+
+> Child templates must be uploaded to S3 before deploying the master stack:
+> `aws s3 sync templates/ s3://YOUR-BUCKET/ecs-cicd-infra/templates/`
 
 ---
 
@@ -160,9 +172,9 @@ flowchart LR
     end
 
     subgraph INFRA["Infra Repository (ecs-cicd-infra)"]
-        DEV_S["deployments/dev/\n01–09 stacks\nenv=dev"]
-        TEST_S["deployments/test/\n01–09 stacks\nenv=test"]
-        PROD_S["deployments/prod/\n01–09 stacks\nenv=prod"]
+        DEV_S["deployments/dev/master.yaml\n1 GitSync link · env=dev"]
+        TEST_S["deployments/test/master.yaml\n1 GitSync link · env=test"]
+        PROD_S["deployments/prod/master.yaml\n1 GitSync link · env=prod"]
     end
 
     DEV_BR -- "image: dev-{sha}" --> DEV_ECS["dev ECS cluster\nALB: dev-bem13-alb"]

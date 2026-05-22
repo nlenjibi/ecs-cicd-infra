@@ -61,7 +61,7 @@ Resources:
           result:
             - SUCCESS
           repository-name:
-            - !Sub "${ProjectName}-app"
+            - !Sub "${ProjectName}-java-app"
           image-tag:
             - !Sub "${Environment}-latest"
       State: ENABLED

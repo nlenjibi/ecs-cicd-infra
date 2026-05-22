@@ -332,7 +332,7 @@ No other AWS secrets are needed.
 |---|---|---|
 | 1 | `network.yaml` | VPC (10.0.0.0/16), 2 public + 2 private subnets across 2 AZs, IGW, NAT, route tables |
 | 2 | `security.yaml` | ALB SG (port 80 public, 9090 VPC-only), ECS SG (port 8080 from ALB only), Endpoint SG |
-| 3 | `ecr.yaml` | ECR repository `bem13-app`, lifecycle rules (keep 15 per env, expire untagged after 1 day) |
+| 3 | `ecr.yaml` | ECR repository `bem13-java-app`, lifecycle rules (keep 15 per env, expire untagged after 1 day) |
 | 4 | `iam.yaml` | EcsTaskExecutionRole, EcsTaskRole, CodePipelineRole, CodeDeployRole, EventBridgeRole, GitHubActionsRole |
 | 5 | `endpoints.yaml` | VPC interface endpoints: ECR API, ECR DKR, CloudWatch Logs; S3 gateway endpoint |
 | 6 | `alb.yaml` | Internet-facing ALB, BlueTargetGroup, GreenTargetGroup, production listener (port 80), test listener (port 9090) |
@@ -575,8 +575,8 @@ aws ecr get-login-password --region us-east-1 | \
   docker login --username AWS --password-stdin <AccountId>.dkr.ecr.us-east-1.amazonaws.com
 
 mvn clean package -DskipTests -B
-docker build -t <AccountId>.dkr.ecr.us-east-1.amazonaws.com/bem13-app:prod-latest .
-docker push <AccountId>.dkr.ecr.us-east-1.amazonaws.com/bem13-app:prod-latest
+docker build -t <AccountId>.dkr.ecr.us-east-1.amazonaws.com/bem13-java-app:prod-latest .
+docker push <AccountId>.dkr.ecr.us-east-1.amazonaws.com/bem13-java-app:prod-latest
 ```
 
 After this, every `git push` triggers the full automated pipeline.
