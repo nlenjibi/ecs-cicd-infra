@@ -1,4 +1,4 @@
-template-file-path: templates/master.yaml
+template-file-path: test/templates/master.yaml
 stack-name: test-bem13-master
 region: us-east-1
 capabilities:
