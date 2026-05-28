@@ -3,7 +3,7 @@ name: Sync Infrastructure Templates
 on:
   push:
     branches:
-      - main
+      - test
 
 permissions:
   id-token: write
