@@ -1,16 +1,3 @@
-# CloudFormation GitSync root deployment file.
-#
-# Uses a single master nested stack to deploy all 9 stacks with ONE
-# GitSync link per environment instead of 9.
-#
-# Pre-requisite: upload all templates to S3 first, then set TemplateBaseUrl.
-#   aws s3 sync templates/ s3://YOUR-BUCKET/ecs-cicd-infra/templates/
-#
-# GitSync setup (AWS Console → CloudFormation → one stack per environment):
-#   deployments/dev/master.yaml  → stack: dev-bem13-master
-#   deployments/test/master.yaml → stack: test-bem13-master
-#   deployments/prod/master.yaml → stack: prod-bem13-master
-
 template-file-path: templates/master.yaml
 stack-name: dev-bem13-master
 region: us-east-1
@@ -20,6 +7,8 @@ capabilities:
 parameters:
   Environment: dev
   ProjectName: bem13
+  # Replace with your S3 bucket URL after running the upload step below.
+  # Example: https://123456789012-us-east-1-cfn-templates.s3.amazonaws.com/ecs-cicd-infra/templates
   TemplateBaseUrl: https://YOUR-BUCKET.s3.amazonaws.com/ecs-cicd-infra/templates
   AppPort: 8080
   TestListenerPort: 9090
@@ -30,7 +19,6 @@ parameters:
   TaskCpu: 512
   TaskMemory: 1024
   BlueTerminationWaitMinutes: 5
-
 tags:
   Environment: dev
   Project: bem13-ecs-cicd
