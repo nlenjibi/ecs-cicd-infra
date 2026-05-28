@@ -172,63 +172,7 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
-  # ── GitHub Actions OIDC Role ───────────────────────────────────
-  # Federated role assumed by GitHub Actions via OIDC — no static keys.
-  GitHubActionsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${Environment}-${ProjectName}-github-actions-role"
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
-            Action: sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                token.actions.githubusercontent.com:aud: sts.amazonaws.com
-              StringLike:
-                # Restrict to your GitHub org/repo — update before deploying
-                token.actions.githubusercontent.com:sub: "repo:YOUR_GITHUB_ORG/YOUR_APP_REPO:ref:refs/heads/*"
-      Policies:
-        - PolicyName: ecr-push-and-s3-upload
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Sid: ECRAuth
-                Effect: Allow
-                Action: ecr:GetAuthorizationToken
-                Resource: "*"
-              - Sid: ECRPush
-                Effect: Allow
-                Action:
-                  - ecr:BatchCheckLayerAvailability
-                  - ecr:CompleteLayerUpload
-                  - ecr:UploadLayerPart
-                  - ecr:InitiateLayerUpload
-                  - ecr:PutImage
-                  - ecr:DescribeImages
-                Resource:
-                  - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ProjectName}-java-app"
-              - Sid: S3ArtifactUpload
-                Effect: Allow
-                Action:
-                  - s3:PutObject
-                  - s3:GetObject
-                Resource:
-                  - !Sub "arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-${Environment}-${ProjectName}-artifacts/*"
-              - Sid: ReadCFNExports
-                Effect: Allow
-                Action: cloudformation:ListExports
-                Resource: "*"
-              - Sid: GetCallerIdentity
-                Effect: Allow
-                Action: sts:GetCallerIdentity
-                Resource: "*"
-      Tags:
-        - Key: Environment
-          Value: !Ref Environment
+  
 
 Outputs:
   EcsTaskExecutionRoleArn:
@@ -255,8 +199,3 @@ Outputs:
     Value: !GetAtt EventBridgeRole.Arn
     Export:
       Name: !Sub "${Environment}-${ProjectName}-EventBridgeRoleArn"
-
-  GitHubActionsRoleArn:
-    Value: !GetAtt GitHubActionsRole.Arn
-    Export:
-      Name: !Sub "${Environment}-${ProjectName}-GitHubActionsRoleArn"

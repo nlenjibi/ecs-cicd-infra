@@ -1,0 +1,30 @@
+name: Sync Infrastructure Templates
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  sync-to-s3:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Sync Templates to S3
+        run: |
+          aws s3 sync dev/templates s3://bem13-cloudformation-infra/dev/templates --delete
+          aws s3 sync test/templates s3://bem13-cloudformation-infra/test/templates --delete
+          aws s3 sync prod/templates s3://bem13-cloudformation-infra/prod/templates --delete
