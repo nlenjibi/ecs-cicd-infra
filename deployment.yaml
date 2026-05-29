@@ -1,5 +1,5 @@
 template-file-path: templates/master.yaml
-stack-name: prod-bem13-master
+stack-name: prod-bem13-master-prod
 region: us-east-1
 capabilities:
   - CAPABILITY_IAM
