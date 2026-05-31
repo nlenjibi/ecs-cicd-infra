@@ -23,7 +23,7 @@ Resources:
   AlbSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: ALB — HTTP from internet, test listener restricted to VPC
+      GroupDescription: ALB - HTTP from internet, test listener restricted to VPC
       VpcId:
         Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcId"
       SecurityGroupIngress:
@@ -58,7 +58,7 @@ Resources:
   EcsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: ECS tasks — inbound from ALB only
+      GroupDescription: ECS tasks - inbound from ALB only
       VpcId:
         Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcId"
       SecurityGroupIngress:
@@ -79,7 +79,7 @@ Resources:
   VpcEndpointSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: VPC Endpoints — HTTPS from ECS tasks
+      GroupDescription: VPC Endpoints - HTTPS from ECS tasks
       VpcId:
         Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcId"
       SecurityGroupIngress:
