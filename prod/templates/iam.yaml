@@ -16,6 +16,7 @@ Resources:
   EcsTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-ecs-exec-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -54,6 +55,7 @@ Resources:
   EcsTaskRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-ecs-task-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -69,6 +71,7 @@ Resources:
   CodePipelineRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-codepipeline-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -129,6 +132,7 @@ Resources:
   CodeDeployRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-codedeploy-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -147,6 +151,7 @@ Resources:
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-eventbridge-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
