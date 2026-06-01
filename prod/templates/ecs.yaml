@@ -146,7 +146,6 @@ Resources:
       ResourceId: !Sub "service/${Cluster}/${EcsService.Name}"
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
-      RoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService"
 
   ScaleOutPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy

@@ -172,7 +172,14 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
-  
+  # ── Service-Linked Role for Application Auto Scaling ──────────
+  # Required once per account for ECS auto scaling to work.
+  # CloudFormation skips creation if it already exists — safe to
+  # leave in permanently across all environments.
+  AutoScalingServiceLinkedRole:
+    Type: AWS::IAM::ServiceLinkedRole
+    Properties:
+      AWSServiceName: ecs.application-autoscaling.amazonaws.com
 
 Outputs:
   EcsTaskExecutionRoleArn:
