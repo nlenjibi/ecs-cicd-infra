@@ -74,8 +74,6 @@ Resources:
         Fn::ImportValue: !Sub "${Environment}-${ProjectName}-EcsTaskRoleArn"
       ContainerDefinitions:
         - Name: app
-          # Image is replaced by CodeDeploy on every deployment.
-          # Uses ECR URI with env-latest pointer for initial bootstrap.
           Image: !Sub
             - "${RepositoryUri}:${Environment}-latest"
             - RepositoryUri:

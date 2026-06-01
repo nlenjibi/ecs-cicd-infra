@@ -10,7 +10,7 @@ parameters:
   TemplateBaseUrl: https://bem13-cloudformation-infra.s3.eu-west-1.amazonaws.com/prod/templates
   AppPort: 8080
   TestListenerPort: 9090
-  DesiredCount: 2
+  DesiredCount: 0
   MinCapacity: 2
   MaxCapacity: 8
   CpuScaleOutThreshold: 70
