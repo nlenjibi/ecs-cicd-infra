@@ -14,8 +14,6 @@ Parameters:
     Default: 'true'
     Description: Set to false if AWSServiceRoleForApplicationAutoScaling_ECSService already exists in this account
 
-Conditions:
-  ShouldCreateAutoScalingRole: !Equals [!Ref CreateAutoScalingServiceLinkedRole, 'true']
 
 Resources:
 
@@ -177,13 +175,7 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
-  # ── Service-Linked Role for Application Auto Scaling ──────────
-  # Controlled by parameter — set to false if role already exists.
-  AutoScalingServiceLinkedRole:
-    Type: AWS::IAM::ServiceLinkedRole
-    Condition: ShouldCreateAutoScalingRole
-    Properties:
-      AWSServiceName: ecs.application-autoscaling.amazonaws.com
+
 
 Outputs:
   EcsTaskExecutionRoleArn:

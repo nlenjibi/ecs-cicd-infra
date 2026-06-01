@@ -1,13 +1,13 @@
 template-file-path: prod/templates/master.yaml
 stack-name: prod-bem13-master-prod
-region: eu-west-1
+region: eu-central-1
 capabilities:
   - CAPABILITY_IAM
   - CAPABILITY_NAMED_IAM
 parameters:
   Environment: prod
   ProjectName: bem13
-  TemplateBaseUrl: https://bem13-cloudformation-infra.s3.eu-west-1.amazonaws.com/prod/templates
+  TemplateBaseUrl: https://bem13-cloud-infra.s3.eu-central-1.amazonaws.com/prod/templates
   AppPort: 8080
   TestListenerPort: 9090
   DesiredCount: 0

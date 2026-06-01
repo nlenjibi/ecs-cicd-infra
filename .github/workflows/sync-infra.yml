@@ -25,4 +25,4 @@ jobs:
 
       - name: Sync Templates to S3
         run: |
-          aws s3 sync prod/templates s3://bem13-cloudformation-infra/prod/templates --delete
+          aws s3 sync prod/templates s3://bem13-cloud-infra/prod/templates --delete

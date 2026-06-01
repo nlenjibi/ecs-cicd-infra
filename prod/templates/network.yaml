@@ -125,25 +125,19 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRT
 
-  # ── NAT Elastic IP ─────────────────────────────────────────────
-  NATEIP:
-    Type: AWS::EC2::EIP
-    DependsOn: IGWAttachment
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: !Sub "${Environment}-${ProjectName}-nat-eip"
+  # ── NAT Gateway ────────────────────────────────────────────────
+ NAT:
+  Type: AWS::EC2::NatGateway
+  DependsOn: IGWAttachment
+  Properties:
+    ConnectivityType: public
+    AvailabilityMode: regional
+    VpcId: !Ref VPC
+    Tags:
+      - Key: Name
+        Value: !Sub "${Environment}-${ProjectName}-regional-nat"
 
-  # ── NAT Gateway (zonal, hosted in PublicSubnet1) ───────────────
-  NAT:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt NATEIP.AllocationId
-      SubnetId: !Ref PublicSubnet1
-      Tags:
-        - Key: Name
-          Value: !Sub "${Environment}-${ProjectName}-nat"
+  
 
   # ── Private Routing ────────────────────────────────────────────
   PrivateRT:
@@ -159,7 +153,7 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRT
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NAT
+      NatGatewayId: !Ref NatGateway
 
   PrivateSubnet1RTAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
