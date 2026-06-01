@@ -166,6 +166,7 @@ Resources:
         CpuScaleOutThreshold: !Ref CpuScaleOutThreshold
         TaskCpu: !Ref TaskCpu
         TaskMemory: !Ref TaskMemory
+        InitialImage: "public.ecr.aws/nginx/nginx:stable"
       Tags:
         - Key: Environment
           Value: !Ref Environment

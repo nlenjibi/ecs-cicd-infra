@@ -42,6 +42,24 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation-GitSync
 
+  ArtifactBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource:
+              - !GetAtt ArtifactBucket.Arn
+              - !Sub "${ArtifactBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+
   # ── EventBridge Rule ───────────────────────────────────────────
   # Fires when GitHub Actions pushes the "{env}-latest" image tag,
   # which starts the CodePipeline execution automatically.

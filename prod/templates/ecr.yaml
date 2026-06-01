@@ -19,7 +19,7 @@ Resources:
       # The mutable "{env}-latest" tag is intentionally omitted from
       # the immutability rule — it acts as a pointer so EventBridge
       # can watch a stable tag name per environment.
-      ImageTagMutability: MUTABLE
+      ImageTagMutability: IMMUTABLE
       ImageScanningConfiguration:
         ScanOnPush: true
       EncryptionConfiguration:

@@ -40,6 +40,11 @@ Resources:
       ServiceRoleArn:
         Fn::ImportValue: !Sub "${Environment}-${ProjectName}-CodeDeployRoleArn"
       DeploymentConfigName: CodeDeployDefault.ECSAllAtOnce
+      AutoRollbackConfiguration:
+        Enabled: true
+        Events:
+          - DEPLOYMENT_FAILURE
+          - DEPLOYMENT_STOP_ON_ALARM
       DeploymentStyle:
         DeploymentType: BLUE_GREEN
         DeploymentOption: WITH_TRAFFIC_CONTROL
