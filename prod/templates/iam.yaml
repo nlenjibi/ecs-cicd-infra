@@ -8,11 +8,18 @@ Parameters:
   ProjectName:
     Type: String
     Default: bem13
+  CreateAutoScalingServiceLinkedRole:
+    Type: String
+    AllowedValues: [true, false]
+    Default: 'true'
+    Description: Set to false if AWSServiceRoleForApplicationAutoScaling_ECSService already exists in this account
+
+Conditions:
+  ShouldCreateAutoScalingRole: !Equals [!Ref CreateAutoScalingServiceLinkedRole, 'true']
 
 Resources:
 
   # ── ECS Task Execution Role ────────────────────────────────────
-  # Allows the ECS agent to pull images from ECR and write logs.
   EcsTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -51,7 +58,6 @@ Resources:
           Value: !Ref Environment
 
   # ── ECS Task Role ──────────────────────────────────────────────
-  # Permissions granted to application code running inside the container.
   EcsTaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -147,7 +153,6 @@ Resources:
           Value: !Ref Environment
 
   # ── EventBridge Role ───────────────────────────────────────────
-  # Allows EventBridge to start CodePipeline execution on ECR push.
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -173,11 +178,10 @@ Resources:
           Value: !Ref Environment
 
   # ── Service-Linked Role for Application Auto Scaling ──────────
-  # Required once per account for ECS auto scaling to work.
-  # CloudFormation skips creation if it already exists — safe to
-  # leave in permanently across all environments.
+  # Controlled by parameter — set to false if role already exists.
   AutoScalingServiceLinkedRole:
     Type: AWS::IAM::ServiceLinkedRole
+    Condition: ShouldCreateAutoScalingRole
     Properties:
       AWSServiceName: ecs.application-autoscaling.amazonaws.com
 
