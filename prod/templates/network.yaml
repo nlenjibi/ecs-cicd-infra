@@ -126,7 +126,7 @@ Resources:
       RouteTableId: !Ref PublicRT
 
   # ── NAT Gateway ────────────────────────────────────────────────
-  NAT:
+  NatGateway:
     Type: AWS::EC2::NatGateway
     DependsOn: IGWAttachment
     Properties:
