@@ -1,25 +1,3 @@
 template-file-path: dev/templates/master.yaml
-stack-name: dev-bem13-master
-region: us-east-1
-capabilities:
-  - CAPABILITY_IAM
-  - CAPABILITY_NAMED_IAM
-parameters:
-  Environment: dev
-  ProjectName: bem13
-  # Replace with your S3 bucket URL after running the upload step below.
-  # Example: https://123456789012-us-east-1-cfn-templates.s3.amazonaws.com/ecs-cicd-infra/templates
-  TemplateBaseUrl: s3://bem13-cloudformation-infra/dev/templates
-  AppPort: 8080
-  TestListenerPort: 9090
-  DesiredCount: 1
-  MinCapacity: 1
-  MaxCapacity: 4
-  CpuScaleOutThreshold: 70
-  TaskCpu: 512
-  TaskMemory: 1024
-  BlueTerminationWaitMinutes: 5
-tags:
-  Environment: dev
-  Project: bem13-ecs-cicd
-  ManagedBy: CloudFormation-GitSync
+parameters: {}
+tags: {}
