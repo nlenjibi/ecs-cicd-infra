@@ -1,0 +1,204 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: BEM13 ECS CICD | Stack 4 of 9 — IAM roles (least-privilege)
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, test, prod]
+  ProjectName:
+    Type: String
+    Default: bem13
+  CreateAutoScalingServiceLinkedRole:
+    Type: String
+    AllowedValues: [true, false]
+    Default: 'true'
+    Description: Set to false if AWSServiceRoleForApplicationAutoScaling_ECSService already exists in this account
+
+
+Resources:
+
+  # ── ECS Task Execution Role ────────────────────────────────────
+  EcsTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-ecs-exec-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: ecr-and-logs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ECRPull
+                Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                Resource: "*"
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ecs/${Environment}-${ProjectName}:*"
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── ECS Task Role ──────────────────────────────────────────────
+  EcsTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-ecs-task-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── CodePipeline Role ──────────────────────────────────────────
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-codepipeline-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: pipeline-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: S3Artifacts
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub "arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-${Environment}-${ProjectName}-artifacts"
+                  - !Sub "arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-${Environment}-${ProjectName}-artifacts/*"
+              - Sid: CodeDeploy
+                Effect: Allow
+                Action:
+                  - codedeploy:CreateDeployment
+                  - codedeploy:GetDeployment
+                  - codedeploy:GetDeploymentConfig
+                  - codedeploy:GetApplicationRevision
+                  - codedeploy:RegisterApplicationRevision
+                Resource: "*"
+              - Sid: ECS
+                Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                  - ecs:DescribeTaskDefinition
+                  - ecs:DescribeTasks
+                  - ecs:ListTasks
+                  - ecs:RegisterTaskDefinition
+                  - ecs:TagResource
+                Resource: "*"
+              - Sid: ECR
+                Effect: Allow
+                Action:
+                  - ecr:DescribeImages
+                Resource: "*"
+              - Sid: PassRoles
+                Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !GetAtt EcsTaskExecutionRole.Arn
+                  - !GetAtt EcsTaskRole.Arn
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── CodeDeploy Role ────────────────────────────────────────────
+  CodeDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-codedeploy-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codedeploy.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodeDeployRoleForECS
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── EventBridge Role ───────────────────────────────────────────
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-eventbridge-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: start-pipeline
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: codepipeline:StartPipelineExecution
+                Resource:
+                  - !Sub "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${Environment}-${ProjectName}-pipeline"
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+
+
+Outputs:
+  EcsTaskExecutionRoleArn:
+    Value: !GetAtt EcsTaskExecutionRole.Arn
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-EcsTaskExecutionRoleArn"
+
+  EcsTaskRoleArn:
+    Value: !GetAtt EcsTaskRole.Arn
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-EcsTaskRoleArn"
+
+  CodePipelineRoleArn:
+    Value: !GetAtt CodePipelineRole.Arn
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-CodePipelineRoleArn"
+
+  CodeDeployRoleArn:
+    Value: !GetAtt CodeDeployRole.Arn
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-CodeDeployRoleArn"
+
+  EventBridgeRoleArn:
+    Value: !GetAtt EventBridgeRole.Arn
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-EventBridgeRoleArn"

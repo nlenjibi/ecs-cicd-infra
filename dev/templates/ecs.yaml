@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: BEM13 ECS CICD | Stack 7 of 9 — ECS cluster, task definition, service, auto scaling
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, test, prod]
+  ProjectName:
+    Type: String
+    Default: bem13
+  AppPort:
+    Type: Number
+    Default: 8080
+  DesiredCount:
+    Type: Number
+    Default: 1
+  MinCapacity:
+    Type: Number
+    Default: 1
+  MaxCapacity:
+    Type: Number
+    Default: 4
+  CpuScaleOutThreshold:
+    Type: Number
+    Default: 70
+  TaskCpu:
+    Type: String
+    Default: '512'
+  TaskMemory:
+    Type: String
+    Default: '1024'
+  InitialImage:
+    Type: String
+    Default: "public.ecr.aws/nginx/nginx:stable"
+
+Resources:
+
+  # ── CloudWatch Log Group ───────────────────────────────────────
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${Environment}-${ProjectName}"
+      RetentionInDays: 30
+
+  # ── ECS Cluster ────────────────────────────────────────────────
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${Environment}-${ProjectName}-cluster"
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-cluster"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── ECS Task Definition ────────────────────────────────────────
+  # The image tag here will be replaced on every deployment by
+  # CodePipeline + CodeDeploy. This definition bootstraps the service.
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${Environment}-${ProjectName}-task"
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      Cpu: !Ref TaskCpu
+      Memory: !Ref TaskMemory
+      ExecutionRoleArn:
+        Fn::ImportValue: !Sub "${Environment}-${ProjectName}-EcsTaskExecutionRoleArn"
+      TaskRoleArn:
+        Fn::ImportValue: !Sub "${Environment}-${ProjectName}-EcsTaskRoleArn"
+      ContainerDefinitions:
+        - Name: app
+          Image: !Ref InitialImage
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref AppPort
+              Protocol: tcp
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: !Ref Environment
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── ECS Service ────────────────────────────────────────────────
+  # DeploymentController CODE_DEPLOY hands blue/green traffic
+  # management to CodeDeploy — CloudFormation manages everything else.
+  EcsService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub "${Environment}-${ProjectName}-service"
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: !Ref DesiredCount
+      LaunchType: FARGATE
+      DeploymentController:
+        Type: CODE_DEPLOY
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-PrivateSubnet1Id"
+            - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-PrivateSubnet2Id"
+          SecurityGroups:
+            - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-EcsSgId"
+      LoadBalancers:
+        - ContainerName: app
+          ContainerPort: !Ref AppPort
+          TargetGroupArn:
+            Fn::ImportValue: !Sub "${Environment}-${ProjectName}-BlueTargetGroupArn"
+      HealthCheckGracePeriodSeconds: 60
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-service"
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── Application Auto Scaling ───────────────────────────────────
+  ScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    DependsOn: EcsService
+    Properties:
+      MinCapacity: !Ref MinCapacity
+      MaxCapacity: !Ref MaxCapacity
+      ResourceId: !Sub "service/${Cluster}/${EcsService.Name}"
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  ScaleOutPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub "${Environment}-${ProjectName}-cpu-scale-out"
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: !Ref CpuScaleOutThreshold
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: 300
+        ScaleOutCooldown: 60
+
+Outputs:
+  ClusterName:
+    Value: !Ref Cluster
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-ClusterName"
+
+  ClusterArn:
+    Value: !GetAtt Cluster.Arn
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-ClusterArn"
+
+  ServiceName:
+    Value: !GetAtt EcsService.Name
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-ServiceName"
+
+  LogGroupName:
+    Value: !Ref LogGroup
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-LogGroupName"
