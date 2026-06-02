@@ -8,11 +8,16 @@ Parameters:
   ProjectName:
     Type: String
     Default: bem13
+  CreateAutoScalingServiceLinkedRole:
+    Type: String
+    AllowedValues: [true, false]
+    Default: 'true'
+    Description: Set to false if AWSServiceRoleForApplicationAutoScaling_ECSService already exists in this account
+
 
 Resources:
 
   # ── ECS Task Execution Role ────────────────────────────────────
-  # Allows the ECS agent to pull images from ECR and write logs.
   EcsTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -51,7 +56,6 @@ Resources:
           Value: !Ref Environment
 
   # ── ECS Task Role ──────────────────────────────────────────────
-  # Permissions granted to application code running inside the container.
   EcsTaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -147,7 +151,6 @@ Resources:
           Value: !Ref Environment
 
   # ── EventBridge Role ───────────────────────────────────────────
-  # Allows EventBridge to start CodePipeline execution on ECR push.
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -172,7 +175,7 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
-  
+
 
 Outputs:
   EcsTaskExecutionRoleArn:

@@ -16,6 +16,8 @@ Resources:
   # uploaded by GitHub Actions before each ECR push.
   ArtifactBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       BucketName: !Sub "${AWS::AccountId}-${AWS::Region}-${Environment}-${ProjectName}-artifacts"
       VersioningConfiguration:
@@ -23,7 +25,7 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: aws:kms
+              SSEAlgorithm: AES256
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -41,6 +43,24 @@ Resources:
           Value: !Ref Environment
         - Key: ManagedBy
           Value: CloudFormation-GitSync
+
+  ArtifactBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource:
+              - !GetAtt ArtifactBucket.Arn
+              - !Sub "${ArtifactBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
 
   # ── EventBridge Rule ───────────────────────────────────────────
   # Fires when GitHub Actions pushes the "{env}-latest" image tag,

@@ -29,6 +29,9 @@ Parameters:
   TaskMemory:
     Type: String
     Default: '1024'
+  InitialImage:
+    Type: String
+    Default: "public.ecr.aws/nginx/nginx:stable"
 
 Resources:
 
@@ -74,12 +77,7 @@ Resources:
         Fn::ImportValue: !Sub "${Environment}-${ProjectName}-EcsTaskRoleArn"
       ContainerDefinitions:
         - Name: app
-          # Image is replaced by CodeDeploy on every deployment.
-          # Uses ECR URI with env-latest pointer for initial bootstrap.
-          Image: !Sub
-            - "${RepositoryUri}:${Environment}-latest"
-            - RepositoryUri:
-                Fn::ImportValue: !Sub "${Environment}-${ProjectName}-RepositoryUri"
+          Image: !Ref InitialImage
           Essential: true
           PortMappings:
             - ContainerPort: !Ref AppPort
@@ -93,14 +91,6 @@ Resources:
               awslogs-group: !Ref LogGroup
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
-          HealthCheck:
-            Command:
-              - CMD-SHELL
-              - !Sub "curl -f http://localhost:${AppPort}/health || exit 1"
-            Interval: 30
-            Timeout: 5
-            Retries: 3
-            StartPeriod: 60
       Tags:
         - Key: Environment
           Value: !Ref Environment
@@ -148,7 +138,6 @@ Resources:
       ResourceId: !Sub "service/${Cluster}/${EcsService.Name}"
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
-      RoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService"
 
   ScaleOutPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
