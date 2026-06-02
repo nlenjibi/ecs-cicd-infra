@@ -25,7 +25,8 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: aws:kms
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
