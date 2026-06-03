@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: BEM13 ECS CICD | Stack 9 of 9 — S3 artifacts, EventBridge rule, CodePipeline
+Description: BEM13 ECS CICD | Stack 9 of 9 — S3 artifacts, CodePipeline
 
 Parameters:
   Environment:
@@ -12,8 +12,6 @@ Parameters:
 Resources:
 
   # ── S3 Artifact Bucket ─────────────────────────────────────────
-  # Stores deploy-artifacts.zip (taskdef.json + appspec.yaml)
-  # uploaded by GitHub Actions before each ECR push.
   ArtifactBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
@@ -62,38 +60,9 @@ Resources:
               Bool:
                 aws:SecureTransport: 'false'
 
-  # ── EventBridge Rule ───────────────────────────────────────────
-  # Fires when GitHub Actions pushes the "{env}-latest" image tag,
-  # which starts the CodePipeline execution automatically.
-  EcrPushRule:
-    Type: AWS::Events::Rule
-    Properties:
-      Name: !Sub "${Environment}-${ProjectName}-ecr-push"
-      Description: !Sub "Start ${Environment}-${ProjectName}-pipeline on ECR image push"
-      EventPattern:
-        source:
-          - aws.ecr
-        detail-type:
-          - ECR Image Action
-        detail:
-          action-type:
-            - PUSH
-          result:
-            - SUCCESS
-          repository-name:
-            - !Sub "${ProjectName}-java-app"
-          image-tag:
-            - !Sub "${Environment}-latest"
-      State: ENABLED
-      Targets:
-        - Id: StartCodePipeline
-          Arn: !Sub
-            - "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${PipelineName}"
-            - PipelineName: !Ref Pipeline
-          RoleArn:
-            Fn::ImportValue: !Sub "${Environment}-${ProjectName}-EventBridgeRoleArn"
-
   # ── CodePipeline ───────────────────────────────────────────────
+  # Triggered by GitHub Actions via codepipeline:StartPipelineExecution
+  # after deploy-artifacts.zip is uploaded to S3.
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
@@ -108,24 +77,6 @@ Resources:
         # ── Stage 1: Source ──────────────────────────────────────
         - Name: Source
           Actions:
-            # ECR source: provides imageDetail.json with the pushed image URI.
-            # CodePipeline substitutes <IMAGE1_NAME> in taskdef.json with this URI.
-            - Name: ECRSource
-              ActionTypeId:
-                Category: Source
-                Owner: AWS
-                Provider: ECR
-                Version: '1'
-              Configuration:
-                RepositoryName:
-                  Fn::ImportValue: !Sub "${Environment}-${ProjectName}-RepositoryName"
-                ImageTag: !Sub "${Environment}-latest"
-              OutputArtifacts:
-                - Name: ECRImageArtifact
-              RunOrder: 1
-
-            # S3 source: fetches deploy-artifacts.zip (taskdef.json + appspec.yaml)
-            # uploaded by GitHub Actions just before the ECR push.
             - Name: DeployArtifactsSource
               ActionTypeId:
                 Category: Source
@@ -154,16 +105,11 @@ Resources:
                   Fn::ImportValue: !Sub "${Environment}-${ProjectName}-CodeDeployAppName"
                 DeploymentGroupName:
                   Fn::ImportValue: !Sub "${Environment}-${ProjectName}-DeploymentGroupName"
-                # taskdef.json template — <IMAGE1_NAME> is substituted with
-                # the ECR image URI from ECRImageArtifact/imageDetail.json.
                 TaskDefinitionTemplateArtifact: DeployArtifacts
                 TaskDefinitionTemplatePath: taskdef.json
                 AppSpecTemplateArtifact: DeployArtifacts
                 AppSpecTemplatePath: appspec.yaml
-                Image1ArtifactName: ECRImageArtifact
-                Image1ContainerName: app
               InputArtifacts:
-                - Name: ECRImageArtifact
                 - Name: DeployArtifacts
               RunOrder: 1
 
