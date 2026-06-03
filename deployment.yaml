@@ -1,4 +1,4 @@
-template-file-path: dev/templates/master.yaml
+template-file-path: prod/templates/master.yaml
 stack-name: prod-bem13-master-prod
 region: eu-west-1
 capabilities:
