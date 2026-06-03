@@ -1,0 +1,211 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: BEM13 ECS CICD | Master stack — deploys all 9 stacks in dependency order via one GitSync link
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, test, prod]
+  ProjectName:
+    Type: String
+    Default: bem13
+  TemplateBaseUrl:
+    Type: String
+    Description: S3 URL prefix where individual templates are stored (no trailing slash)
+    # Example: https://my-bucket.s3.amazonaws.com/ecs-cicd-infra/templates
+
+  AppPort:
+    Type: Number
+    Default: 8080
+  TestListenerPort:
+    Type: Number
+    Default: 9090
+  DesiredCount:
+    Type: Number
+    Default: 1
+  MinCapacity:
+    Type: Number
+    Default: 1
+  MaxCapacity:
+    Type: Number
+    Default: 4
+  CpuScaleOutThreshold:
+    Type: Number
+    Default: 70
+  TaskCpu:
+    Type: String
+    Default: '512'
+  TaskMemory:
+    Type: String
+    Default: '1024'
+  BlueTerminationWaitMinutes:
+    Type: Number
+    Default: 5
+
+Resources:
+
+  # ── 01: Network ────────────────────────────────────────────────
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/network.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── 02: Security Groups ────────────────────────────────────────
+  SecurityStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: NetworkStack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/security.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+        AppPort: !Ref AppPort
+        TestListenerPort: !Ref TestListenerPort
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── 03: ECR ────────────────────────────────────────────────────
+  EcrStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SecurityStack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/ecr.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── 04: IAM Roles ──────────────────────────────────────────────
+  # CAPABILITY_NAMED_IAM is declared in the master deployment file
+  # and cascades to this nested stack automatically.
+  IamStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: EcrStack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/iam.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── 05: VPC Endpoints ──────────────────────────────────────────
+  EndpointsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: IamStack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/endpoints.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── 06: ALB ────────────────────────────────────────────────────
+  AlbStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: EndpointsStack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/alb.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+        AppPort: !Ref AppPort
+        TestListenerPort: !Ref TestListenerPort
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── 07: ECS Cluster, Task Definition, Service ─────────────────
+  EcsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: AlbStack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/ecs.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+        AppPort: !Ref AppPort
+        DesiredCount: !Ref DesiredCount
+        MinCapacity: !Ref MinCapacity
+        MaxCapacity: !Ref MaxCapacity
+        CpuScaleOutThreshold: !Ref CpuScaleOutThreshold
+        TaskCpu: !Ref TaskCpu
+        TaskMemory: !Ref TaskMemory
+        InitialImage: "public.ecr.aws/nginx/nginx:stable"
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── 08: CodeDeploy Application & Deployment Group ─────────────
+  CodeDeployStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: EcsStack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/codedeploy.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+        BlueTerminationWaitMinutes: !Ref BlueTerminationWaitMinutes
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── 09: S3 Artifact Bucket, EventBridge Rule, CodePipeline ────
+  PipelineStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: CodeDeployStack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/pipeline.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync

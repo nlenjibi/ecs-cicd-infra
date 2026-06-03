@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: BEM13 ECS CICD | Stack 2 of 9 — Security groups (least-privilege)
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, test, prod]
+  ProjectName:
+    Type: String
+    Default: bem13
+  AppPort:
+    Type: Number
+    Default: 8080
+  TestListenerPort:
+    Type: Number
+    Default: 9090
+
+Resources:
+
+  # ── ALB Security Group ─────────────────────────────────────────
+  # Public-facing: allows HTTP (80) production traffic and port 9090
+  # for CodeDeploy's green-slot validation traffic.
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ALB - HTTP from internet, test listener restricted to VPC
+      VpcId:
+        Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcId"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP production traffic
+        - IpProtocol: tcp
+          FromPort: !Ref TestListenerPort
+          ToPort: !Ref TestListenerPort
+          CidrIp:
+            Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcCidr"
+          Description: CodeDeploy green-slot validation (VPC only)
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: !Ref AppPort
+          ToPort: !Ref AppPort
+          CidrIp:
+            Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcCidr"
+          Description: Forward to ECS tasks
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-alb-sg"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ── ECS Task Security Group ────────────────────────────────────
+  # Private: only accepts traffic originating from the ALB SG.
+  EcsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS tasks - inbound from ALB only
+      VpcId:
+        Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcId"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref AppPort
+          ToPort: !Ref AppPort
+          SourceSecurityGroupId: !Ref AlbSecurityGroup
+          Description: App traffic from ALB only
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-ecs-sg"
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── VPC Endpoint Security Group ────────────────────────────────
+  # Allows HTTPS from ECS tasks so they can reach ECR / CloudWatch
+  # without traversing the public internet.
+  VpcEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: VPC Endpoints - HTTPS from ECS tasks
+      VpcId:
+        Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcId"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref EcsSecurityGroup
+          Description: HTTPS from ECS tasks to endpoints
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-endpoint-sg"
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  AlbSgId:
+    Value: !Ref AlbSecurityGroup
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-AlbSgId"
+
+  EcsSgId:
+    Value: !Ref EcsSecurityGroup
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-EcsSgId"
+
+  VpcEndpointSgId:
+    Value: !Ref VpcEndpointSecurityGroup
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-VpcEndpointSgId"

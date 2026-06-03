@@ -1,13 +1,13 @@
-template-file-path: prod/templates/master.yaml
-stack-name: prod-bem13-master-prod
+template-file-path: dev/templates/master.yaml
+stack-name: dev-bem13-master-prod
 region: eu-west-1
 capabilities:
   - CAPABILITY_IAM
   - CAPABILITY_NAMED_IAM
 parameters:
-  Environment: prod
+  Environment: dev
   ProjectName: bem13
-  TemplateBaseUrl: https://bem13-cloudformation-infra.s3.eu-west-1.amazonaws.com/prod/templates
+  TemplateBaseUrl: https://bem13-cloudformation-infra.s3.eu-west-1.amazonaws.com/dev/templates
   AppPort: 8080
   TestListenerPort: 9090
   DesiredCount: 0
@@ -18,6 +18,6 @@ parameters:
   TaskMemory: 2048
   BlueTerminationWaitMinutes: 10
 tags:
-  Environment: prod
+  Environment: dev
   Project: bem13-ecs-cicd
   ManagedBy: CloudFormation-GitSync
