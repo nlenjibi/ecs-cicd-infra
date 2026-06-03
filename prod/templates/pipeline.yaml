@@ -60,9 +60,37 @@ Resources:
               Bool:
                 aws:SecureTransport: 'false'
 
+  # ── EventBridge Rule ───────────────────────────────────────────
+  # Fires when GitHub Actions pushes the "latest" image tag to ECR.
+  EcrPushRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "${Environment}-${ProjectName}-ecr-push"
+      Description: !Sub "Start ${Environment}-${ProjectName}-pipeline on ECR latest push"
+      EventPattern:
+        source:
+          - aws.ecr
+        detail-type:
+          - ECR Image Action
+        detail:
+          action-type:
+            - PUSH
+          result:
+            - SUCCESS
+          repository-name:
+            - !Sub "${ProjectName}-java-app"
+          image-tag:
+            - latest
+      State: ENABLED
+      Targets:
+        - Id: StartCodePipeline
+          Arn: !Sub
+            - "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${PipelineName}"
+            - PipelineName: !Ref Pipeline
+          RoleArn:
+            Fn::ImportValue: !Sub "${Environment}-${ProjectName}-EventBridgeRoleArn"
+
   # ── CodePipeline ───────────────────────────────────────────────
-  # Triggered by GitHub Actions via codepipeline:StartPipelineExecution
-  # after deploy-artifacts.zip is uploaded to S3.
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
