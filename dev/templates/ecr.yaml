@@ -15,11 +15,7 @@ Resources:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${ProjectName}-java-app"
-      # Immutable tags: once pushed, a tag cannot be overwritten.
-      # The mutable "{env}-latest" tag is intentionally omitted from
-      # the immutability rule — it acts as a pointer so EventBridge
-      # can watch a stable tag name per environment.
-      ImageTagMutability: IMMUTABLE
+      ImageTagMutability: MUTABLE
       ImageScanningConfiguration:
         ScanOnPush: true
       EncryptionConfiguration:
