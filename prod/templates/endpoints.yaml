@@ -30,6 +30,15 @@ Resources:
         - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-PrivateSubnet2Id"
       SecurityGroupIds:
         - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcEndpointSgId"
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-ecr-api-endpoint"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── ECR DKR (Interface) ────────────────────────────────────────
   # Used by Docker daemon inside ECS tasks to pull image layers.
@@ -46,6 +55,15 @@ Resources:
         - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-PrivateSubnet2Id"
       SecurityGroupIds:
         - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcEndpointSgId"
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-ecr-dkr-endpoint"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── S3 Gateway ────────────────────────────────────────────────
   # ECR stores Docker image layers in S3; tasks pull them via this
@@ -59,6 +77,15 @@ Resources:
       VpcEndpointType: Gateway
       RouteTableIds:
         - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-PrivateRTId"
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-s3-gateway-endpoint"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── CloudWatch Logs (Interface) ────────────────────────────────
   # Allows the awslogs log driver inside tasks to ship log streams
@@ -76,3 +103,12 @@ Resources:
         - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-PrivateSubnet2Id"
       SecurityGroupIds:
         - Fn::ImportValue: !Sub "${Environment}-${ProjectName}-VpcEndpointSgId"
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-cloudwatch-logs-endpoint"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync

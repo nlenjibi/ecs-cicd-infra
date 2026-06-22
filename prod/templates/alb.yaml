@@ -62,6 +62,12 @@ Resources:
           Value: !Sub "${Environment}-${ProjectName}-blue-tg"
         - Key: Slot
           Value: blue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── Green Target Group (new deployment / CodeDeploy swap) ─────
   GreenTargetGroup:
@@ -85,6 +91,12 @@ Resources:
           Value: !Sub "${Environment}-${ProjectName}-green-tg"
         - Key: Slot
           Value: green
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── Production Listener (port 80) ─────────────────────────────
   # Routes live traffic. CodeDeploy swaps which target group
@@ -98,6 +110,15 @@ Resources:
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref BlueTargetGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-prod-listener"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── Test Listener (port 9090) ──────────────────────────────────
   # CodeDeploy routes green-slot traffic here during validation
@@ -111,6 +132,15 @@ Resources:
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref GreenTargetGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-test-listener"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
 Outputs:
   AlbDnsName:

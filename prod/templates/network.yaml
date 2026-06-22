@@ -37,6 +37,10 @@ Resources:
           Value: !Sub "${Environment}-${ProjectName}-igw"
         - Key: Environment
           Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   IGWAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -57,6 +61,12 @@ Resources:
           Value: !Sub "${Environment}-${ProjectName}-public-1"
         - Key: Tier
           Value: public
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -70,6 +80,12 @@ Resources:
           Value: !Sub "${Environment}-${ProjectName}-public-2"
         - Key: Tier
           Value: public
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── Private Subnets (ECS Fargate tasks) ───────────────────────
   PrivateSubnet1:
@@ -83,6 +99,12 @@ Resources:
           Value: !Sub "${Environment}-${ProjectName}-private-1"
         - Key: Tier
           Value: private
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -95,6 +117,12 @@ Resources:
           Value: !Sub "${Environment}-${ProjectName}-private-2"
         - Key: Tier
           Value: private
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── Public Routing ─────────────────────────────────────────────
   PublicRT:
@@ -104,6 +132,12 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${Environment}-${ProjectName}-public-rt"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   PublicRoute:
     Type: AWS::EC2::Route
@@ -136,6 +170,12 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${Environment}-${ProjectName}-regional-nat"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
     
 
@@ -147,6 +187,12 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${Environment}-${ProjectName}-private-rt"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   PrivateRoute:
     Type: AWS::EC2::Route

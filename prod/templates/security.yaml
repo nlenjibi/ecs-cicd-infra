@@ -52,6 +52,8 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── ECS Task Security Group ────────────────────────────────────
   # Private: only accepts traffic originating from the ALB SG.
@@ -72,6 +74,10 @@ Resources:
           Value: !Sub "${Environment}-${ProjectName}-ecs-sg"
         - Key: Environment
           Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── VPC Endpoint Security Group ────────────────────────────────
   # Allows HTTPS from ECS tasks so they can reach ECR / CloudWatch
@@ -93,6 +99,10 @@ Resources:
           Value: !Sub "${Environment}-${ProjectName}-endpoint-sg"
         - Key: Environment
           Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
 Outputs:
   AlbSgId:

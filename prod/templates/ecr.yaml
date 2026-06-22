@@ -26,23 +26,12 @@ Resources:
             "rules": [
               {
                 "rulePriority": 1,
-                "description": "Retain last 15 immutable commit-tagged images per env",
-                "selection": {
-                  "tagStatus": "tagged",
-                  "tagPrefixList": ["dev-", "test-", "prod-"],
-                  "countType": "imageCountMoreThan",
-                  "countNumber": 15
-                },
-                "action": { "type": "expire" }
-              },
-              {
-                "rulePriority": 2,
-                "description": "Remove untagged images after 1 day",
+                "description": "Delete untagged images older than 30 days",
                 "selection": {
                   "tagStatus": "untagged",
                   "countType": "sinceImagePushed",
                   "countUnit": "days",
-                  "countNumber": 1
+                  "countNumber": 30
                 },
                 "action": { "type": "expire" }
               }

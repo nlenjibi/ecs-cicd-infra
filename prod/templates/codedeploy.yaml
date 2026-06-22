@@ -22,10 +22,14 @@ Resources:
       ApplicationName: !Sub "${Environment}-${ProjectName}-app"
       ComputePlatform: ECS
       Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-app"
         - Key: Environment
           Value: !Ref Environment
         - Key: Project
           Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── Deployment Group ───────────────────────────────────────────
   # BLUE_GREEN with WITH_TRAFFIC_CONTROL: CodeDeploy registers the
@@ -74,8 +78,14 @@ Resources:
           ServiceName:
             Fn::ImportValue: !Sub "${Environment}-${ProjectName}-ServiceName"
       Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-dg"
         - Key: Environment
           Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
 Outputs:
   ApplicationName:

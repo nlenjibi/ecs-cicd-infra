@@ -52,8 +52,14 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ecs/${Environment}-${ProjectName}:*"
       Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-ecs-exec-role"
         - Key: Environment
           Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── ECS Task Role ──────────────────────────────────────────────
   EcsTaskRole:
@@ -68,8 +74,14 @@ Resources:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
       Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-ecs-task-role"
         - Key: Environment
           Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── CodePipeline Role ──────────────────────────────────────────
   CodePipelineRole:
@@ -101,6 +113,7 @@ Resources:
               - Sid: CodeDeploy
                 Effect: Allow
                 Action:
+                  - codedeploy:GetApplication
                   - codedeploy:CreateDeployment
                   - codedeploy:GetDeployment
                   - codedeploy:GetDeploymentConfig
@@ -129,8 +142,14 @@ Resources:
                   - !GetAtt EcsTaskExecutionRole.Arn
                   - !GetAtt EcsTaskRole.Arn
       Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-codepipeline-role"
         - Key: Environment
           Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── CodeDeploy Role ────────────────────────────────────────────
   CodeDeployRole:
@@ -147,8 +166,14 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSCodeDeployRoleForECS
       Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-codedeploy-role"
         - Key: Environment
           Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
   # ── EventBridge Role ───────────────────────────────────────────
   EventBridgeRole:
@@ -172,8 +197,14 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${Environment}-${ProjectName}-pipeline"
       Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-eventbridge-role"
         - Key: Environment
           Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
 
 
 
