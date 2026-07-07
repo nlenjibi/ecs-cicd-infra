@@ -47,19 +47,6 @@ Resources:
               }
             ]
           }
-      RepositoryPolicyText:
-        Version: '2012-10-17'
-        Statement:
-          - Sid: AllowGitHubActionsPush
-            Effect: Allow
-            Principal:
-              AWS: !GetAtt GitHubActionsRole.Arn
-            Action:
-              - ecr:BatchCheckLayerAvailability
-              - ecr:CompleteLayerUpload
-              - ecr:InitiateLayerUpload
-              - ecr:PutImage
-              - ecr:UploadLayerPart
       Tags:
         - Key: Name
           Value: !Sub "${Environment}-${ProjectName}-ecr"
