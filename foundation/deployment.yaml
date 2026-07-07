@@ -7,8 +7,8 @@ capabilities:
 parameters:
   Environment: prod
   ProjectName: bem13
-  GitHubOrg: TimothyNlenjibi
-  GitHubRepo: ecs-cicd-app
+  GitHubOrg: nlenjibi
+  GitHubRepo: ecs-cicd-infra
 tags:
   Environment: prod
   Project: bem13-ecs-cicd
