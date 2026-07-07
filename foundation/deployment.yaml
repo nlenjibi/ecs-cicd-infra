@@ -8,7 +8,7 @@ parameters:
   Environment: prod
   ProjectName: bem13
   GitHubOrg: nlenjibi
-  GitHubRepo: ecs-cicd-infra
+  GitHubRepo: ecs-cicd-app
 tags:
   Environment: prod
   Project: bem13-ecs-cicd
