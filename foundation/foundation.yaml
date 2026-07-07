@@ -1,0 +1,200 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  BEM13 ECS CICD | Foundation stack — ECR repository, GitHub OIDC provider, and
+  least-privilege IAM role for GitHub Actions.
+  Deploy this BEFORE master.yaml.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, test, prod]
+  ProjectName:
+    Type: String
+    Default: bem13
+  GitHubOrg:
+    Type: String
+    Description: GitHub organisation or username that owns the app repository (e.g. TimothyNlenjibi)
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name (e.g. ecs-cicd-app)
+
+Resources:
+
+  # ── ECR Repository ─────────────────────────────────────────────
+  Repository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}-java-app"
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Delete untagged images older than 30 days",
+                "selection": {
+                  "tagStatus": "untagged",
+                  "countType": "sinceImagePushed",
+                  "countUnit": "days",
+                  "countNumber": 30
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      RepositoryPolicyText:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowGitHubActionsPush
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt GitHubActionsRole.Arn
+            Action:
+              - ecr:BatchCheckLayerAvailability
+              - ecr:CompleteLayerUpload
+              - ecr:InitiateLayerUpload
+              - ecr:PutImage
+              - ecr:UploadLayerPart
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-ecr"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── GitHub OIDC Identity Provider ─────────────────────────────
+  # Lets GitHub Actions exchange a short-lived OIDC token for AWS
+  # credentials via sts:AssumeRoleWithWebIdentity — no long-lived
+  # access keys stored anywhere.
+  GithubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-github-oidc-provider"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── GitHub Actions IAM Role ────────────────────────────────────
+  # Least-privilege: scoped to this project's ECR repo and artifacts
+  # bucket only. The sub condition locks the role to a single GitHub
+  # repository — any other repo's token is rejected.
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Environment}-${ProjectName}-github-actions-role"
+      Description: Assumed by GitHub Actions via OIDC to push images to ECR
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GithubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOrg}/${GitHubRepo}:*"
+      Policies:
+        - PolicyName: ecr-push-least-privilege
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # GetAuthorizationToken has no resource-level scope in ECR
+              - Sid: ECRGetToken
+                Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: "*"
+              # All push operations scoped to this project's ECR repo only
+              - Sid: ECRPush
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                Resource: !GetAtt Repository.Arn
+        - PolicyName: s3-artifacts-put
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: S3ArtifactUpload
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub "arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-${Environment}-${ProjectName}-artifacts"
+                  - !Sub "arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-${Environment}-${ProjectName}-artifacts/*"
+        - PolicyName: ssm-read-deploy-config
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # GitHub Actions reads infra identifiers (role ARNs, bucket)
+              # from SSM — nothing is stored in GitHub Secrets or the repo.
+              - Sid: SSMReadDeployConfig
+                Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/*"
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-${ProjectName}-github-actions-role"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+Outputs:
+  RepositoryUri:
+    Value: !GetAtt Repository.RepositoryUri
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-RepositoryUri"
+
+  RepositoryName:
+    Value: !Ref Repository
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-RepositoryName"
+
+  RepositoryArn:
+    Value: !GetAtt Repository.Arn
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-RepositoryArn"
+
+  GitHubActionsRoleArn:
+    Value: !GetAtt GitHubActionsRole.Arn
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-GitHubActionsRoleArn"
+
+  OidcProviderArn:
+    Value: !Ref GithubOidcProvider
+    Export:
+      Name: !Sub "${Environment}-${ProjectName}-OidcProviderArn"

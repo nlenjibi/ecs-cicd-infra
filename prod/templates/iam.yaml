@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: BEM13 ECS CICD | Stack 4 of 9 — IAM roles (least-privilege)
+Description: BEM13 ECS CICD | Stack 3 of 8 — IAM roles (least-privilege)
 
 Parameters:
   Environment:
@@ -51,6 +51,15 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ecs/${Environment}-${ProjectName}:*"
+              # Allows ECS to resolve secrets.valueFrom SSM parameters
+              # at task launch — the container never sees raw credentials.
+              - Sid: SSMSecretsResolve
+                Effect: Allow
+                Action:
+                  - ssm:GetParameters
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/app/*"
       Tags:
         - Key: Name
           Value: !Sub "${Environment}-${ProjectName}-ecs-exec-role"

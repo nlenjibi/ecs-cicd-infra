@@ -11,9 +11,9 @@ parameters:
   AppPort: 8080
   TestListenerPort: 9090
   DesiredCount: 0
-  MinCapacity: 2
-  MaxCapacity: 8
-  CpuScaleOutThreshold: 70
+  MinCapacity: 1
+  MaxCapacity: 4
+  CpuScaleOutThreshold: 30
   TaskCpu: 1024
   TaskMemory: 2048
   BlueTerminationWaitMinutes: 10

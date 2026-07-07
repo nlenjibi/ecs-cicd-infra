@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: BEM13 ECS CICD | Stack 2 of 9 — Security groups (least-privilege)
+Description: BEM13 ECS CICD | Stack 2 of 8 — Security groups (least-privilege)
 
 Parameters:
   Environment:

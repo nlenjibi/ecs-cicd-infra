@@ -1,5 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: BEM13 ECS CICD | Master stack — deploys all 9 stacks in dependency order via one GitSync link
+Description: >
+  BEM13 ECS CICD | Master stack — deploys 9 stacks in dependency order via one GitSync link.
+  Prerequisite (deploy first via GitSync using foundation/deployment.yaml):
+    - foundation/foundation.yaml   → stack: prod-bem13-foundation
 
 Parameters:
   Environment:
@@ -78,29 +81,13 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation-GitSync
 
-  # ── 03: ECR ────────────────────────────────────────────────────
-  EcrStack:
-    Type: AWS::CloudFormation::Stack
-    DependsOn: SecurityStack
-    Properties:
-      TemplateURL: !Sub "${TemplateBaseUrl}/ecr.yaml"
-      Parameters:
-        Environment: !Ref Environment
-        ProjectName: !Ref ProjectName
-      Tags:
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Project
-          Value: !Ref ProjectName
-        - Key: ManagedBy
-          Value: CloudFormation-GitSync
-
-  # ── 04: IAM Roles ──────────────────────────────────────────────
+  # ── 03: IAM Roles ──────────────────────────────────────────────
+  # ECR (foundation stack) is deployed independently before this master stack.
   # CAPABILITY_NAMED_IAM is declared in the master deployment file
   # and cascades to this nested stack automatically.
   IamStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn: EcrStack
+    DependsOn: SecurityStack
     Properties:
       TemplateURL: !Sub "${TemplateBaseUrl}/iam.yaml"
       Parameters:
@@ -114,7 +101,7 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation-GitSync
 
-  # ── 05: VPC Endpoints ──────────────────────────────────────────
+  # ── 04: VPC Endpoints ──────────────────────────────────────────
   EndpointsStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: IamStack
@@ -131,7 +118,7 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation-GitSync
 
-  # ── 06: ALB ────────────────────────────────────────────────────
+  # ── 05: ALB ────────────────────────────────────────────────────
   AlbStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: EndpointsStack
@@ -150,7 +137,7 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation-GitSync
 
-  # ── 07: ECS Cluster, Task Definition, Service ─────────────────
+  # ── 06: ECS Cluster, Task Definition, Service ─────────────────
   EcsStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: AlbStack
@@ -166,7 +153,11 @@ Resources:
         CpuScaleOutThreshold: !Ref CpuScaleOutThreshold
         TaskCpu: !Ref TaskCpu
         TaskMemory: !Ref TaskMemory
-        InitialImage: "public.ecr.aws/nginx/nginx:stable"
+        InitialImage:
+          Fn::Sub:
+            - "${Uri}:latest"
+            - Uri:
+                Fn::ImportValue: !Sub "${Environment}-${ProjectName}-RepositoryUri"
       Tags:
         - Key: Environment
           Value: !Ref Environment
@@ -175,7 +166,7 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation-GitSync
 
-  # ── 08: CodeDeploy Application & Deployment Group ─────────────
+  # ── 07: CodeDeploy Application & Deployment Group ─────────────
   CodeDeployStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: EcsStack
@@ -193,12 +184,31 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation-GitSync
 
-  # ── 09: S3 Artifact Bucket, EventBridge Rule, CodePipeline ────
+  # ── 08: S3 Artifact Bucket, EventBridge Rule, CodePipeline ────
   PipelineStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: CodeDeployStack
     Properties:
       TemplateURL: !Sub "${TemplateBaseUrl}/pipeline.yaml"
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation-GitSync
+
+  # ── 09: SSM Parameter Store ────────────────────────────────────
+  # Must be last — imports exports from every preceding stack plus
+  # the standalone foundation stack (ECR URI, role ARNs, bucket).
+  SsmStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: PipelineStack
+    Properties:
+      TemplateURL: !Sub "${TemplateBaseUrl}/ssm.yaml"
       Parameters:
         Environment: !Ref Environment
         ProjectName: !Ref ProjectName

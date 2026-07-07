@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: BEM13 ECS CICD | Stack 9 of 9 — S3 artifacts, CodePipeline
+Description: BEM13 ECS CICD | Stack 8 of 8 — S3 artifacts, CodePipeline
 
 Parameters:
   Environment:
@@ -14,8 +14,8 @@ Resources:
   # ── S3 Artifact Bucket ─────────────────────────────────────────
   ArtifactBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub "${AWS::AccountId}-${AWS::Region}-${Environment}-${ProjectName}-artifacts"
       VersioningConfiguration:

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: BEM13 ECS CICD | Stack 6 of 9 — ALB with blue/green target groups
+Description: BEM13 ECS CICD | Stack 5 of 8 — ALB with blue/green target groups
 
 Parameters:
   Environment:

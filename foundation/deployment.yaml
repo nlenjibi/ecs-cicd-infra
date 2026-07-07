@@ -1,0 +1,15 @@
+template-file-path: foundation/foundation.yaml
+stack-name: prod-bem13-foundation
+region: eu-west-1
+capabilities:
+  - CAPABILITY_IAM
+  - CAPABILITY_NAMED_IAM
+parameters:
+  Environment: prod
+  ProjectName: bem13
+  GitHubOrg: TimothyNlenjibi
+  GitHubRepo: ecs-cicd-app
+tags:
+  Environment: prod
+  Project: bem13-ecs-cicd
+  ManagedBy: CloudFormation-GitSync

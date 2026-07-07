@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: BEM13 ECS CICD | Stack 8 of 9 — CodeDeploy ECS blue/green application
+Description: BEM13 ECS CICD | Stack 7 of 8 — CodeDeploy ECS blue/green application
 
 Parameters:
   Environment:

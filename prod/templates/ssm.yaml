@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  BEM13 ECS CICD | Stack 9 of 9 — SSM Parameter Store.
+  Holds all deployment config so neither the GitHub repo nor GitHub
+  Secrets store any infrastructure values. GitHub Actions reads role
+  ARNs and bucket names from here via OIDC-authenticated API calls.
+  SPRING_PROFILES_ACTIVE is resolved by the ECS execution role at
+  task launch via secrets.valueFrom — CI never touches that value.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, test, prod]
+  ProjectName:
+    Type: String
+    Default: bem13
+
+Resources:
+
+  # ── ECR ────────────────────────────────────────────────────────
+  EcrRepoUriParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/ecr/image-uri"
+      Type: String
+      Description: Full ECR repository URI (without tag) — GitHub Actions appends the tag at push time
+      Value:
+        Fn::ImportValue: !Sub "${Environment}-${ProjectName}-RepositoryUri"
+      Tags:
+        Environment: !Ref Environment
+        Project: !Ref ProjectName
+        ManagedBy: CloudFormation-GitSync
+
+  # ── ECS IAM Roles ──────────────────────────────────────────────
+  EcsExecRoleParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/ecs/exec-role-arn"
+      Type: String
+      Description: ECS task execution role ARN — read by GitHub Actions to populate taskdef at deploy time
+      Value:
+        Fn::ImportValue: !Sub "${Environment}-${ProjectName}-EcsTaskExecutionRoleArn"
+      Tags:
+        Environment: !Ref Environment
+        Project: !Ref ProjectName
+        ManagedBy: CloudFormation-GitSync
+
+  EcsTaskRoleParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/ecs/task-role-arn"
+      Type: String
+      Description: ECS task role ARN — read by GitHub Actions to populate taskdef at deploy time
+      Value:
+        Fn::ImportValue: !Sub "${Environment}-${ProjectName}-EcsTaskRoleArn"
+      Tags:
+        Environment: !Ref Environment
+        Project: !Ref ProjectName
+        ManagedBy: CloudFormation-GitSync
+
+  # ── S3 Artifacts ───────────────────────────────────────────────
+  ArtifactsBucketParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/s3/artifacts-bucket"
+      Type: String
+      Description: S3 bucket name for CodeDeploy artifacts — read by GitHub Actions
+      Value:
+        Fn::ImportValue: !Sub "${Environment}-${ProjectName}-ArtifactsBucket"
+      Tags:
+        Environment: !Ref Environment
+        Project: !Ref ProjectName
+        ManagedBy: CloudFormation-GitSync
+
+  # ── Runtime app config (resolved by ECS, NOT by CI) ───────────
+  # ECS execution role reads this at task launch via secrets.valueFrom.
+  # GitHub Actions never fetches or injects this value.
+  EnvNameParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/app/spring-profile"
+      Type: String
+      Description: SPRING_PROFILES_ACTIVE — injected into the container by ECS at task startup
+      Value: !Ref Environment
+      Tags:
+        Environment: !Ref Environment
+        Project: !Ref ProjectName
+        ManagedBy: CloudFormation-GitSync

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: BEM13 ECS CICD | Stack 5 of 9 — VPC endpoints for ECR, S3, CloudWatch
+Description: BEM13 ECS CICD | Stack 4 of 8 — VPC endpoints for ECR, S3, CloudWatch
 
 # Required so ECS Fargate tasks in private subnets can reach AWS
 # services (ECR for image pulls, CloudWatch for logs) without a

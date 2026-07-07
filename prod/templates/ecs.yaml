@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: BEM13 ECS CICD | Stack 7 of 9 — ECS cluster, task definition, service, auto scaling
+Description: BEM13 ECS CICD | Stack 6 of 8 — ECS cluster, task definition, service, auto scaling
 
 Parameters:
   Environment:
@@ -31,7 +31,7 @@ Parameters:
     Default: '1024'
   InitialImage:
     Type: String
-    Default: "public.ecr.aws/nginx/nginx:stable"
+    Description: Private ECR image URI for the bootstrap task definition (passed from master.yaml)
 
 Resources:
 
