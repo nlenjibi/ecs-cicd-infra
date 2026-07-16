@@ -13,7 +13,7 @@ parameters:
   DesiredCount: 0
   MinCapacity: 1
   MaxCapacity: 4
-  CpuScaleOutThreshold: 30
+  CpuScaleOutThreshold: 70
   TaskCpu: 1024
   TaskMemory: 2048
   BlueTerminationWaitMinutes: 10
