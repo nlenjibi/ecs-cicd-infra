@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Claude Code">
   <diagram name="prod-bem13 Infrastructure" id="prod-bem13-infra">
-    <mxGraphModel dx="3142" dy="2478" grid="1" gridSize="16" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" background="none" math="0" shadow="0">
+    <mxGraphModel dx="1768" dy="1798" grid="1" gridSize="16" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" background="none" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -73,7 +73,7 @@
         <mxCell id="vpc-endpoints" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#147EBA;fillColor=#E6F2F8;align=center;fontSize=9;fontStyle=1;" value="&lt;font style=&quot;font-size: 21px;&quot;&gt;VPC Interface Endpoints  —  ecr.api | ecr.dkr | logs | ssm     (No NAT Gateway)&lt;/font&gt;" vertex="1">
           <mxGeometry height="58" width="794" x="856" y="1312" as="geometry" />
         </mxCell>
-        <mxCell id="sg-note" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C7131F;fillColor=#FFE6E6;align=center;fontSize=9;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;Security Groups:  ALB ← :443 Internet  |  ALB → ECS :8080  |  ECS → RDS :5432  |  No inbound on DB subnet&lt;/font&gt;" vertex="1">
+        <mxCell id="sg-note" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C7131F;fillColor=#FFE6E6;align=center;fontSize=9;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;Security Groups:  ALB ← :443 Internet  |  ALB → ECS :8080&amp;nbsp;&lt;/font&gt;" vertex="1">
           <mxGeometry height="63" width="796" x="850" y="1408" as="geometry" />
         </mxCell>
         <mxCell id="e1" edge="1" parent="1" source="developer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="github">
